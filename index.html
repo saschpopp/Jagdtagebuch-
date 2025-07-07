@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -47,6 +46,19 @@
             <label>Stückzahl:</label>
             <input type="number" id="anzahl" required>
 
+            <label>Gewicht (kg):</label>
+            <input type="number" id="gewicht" step="0.1" placeholder="z. B. 35.5">
+
+            <label>Gesundheitszustand:</label>
+            <select id="gesundheit">
+              <option value="">Bitte wählen</option>
+              <option value="Unauffällig">Unauffällig</option>
+              <option value="Verletzt">Verletzt</option>
+              <option value="Abgemagert">Abgemagert</option>
+              <option value="Parasitenbefall">Parasitenbefall</option>
+              <option value="Sonstiges">Sonstiges</option>
+            </select>
+
             <label>Wetter:</label>
             <input type="text" id="wetter">
 
@@ -81,6 +93,8 @@
                 <th>Wildart</th>
                 <th>Geschlecht</th>
                 <th>Stück</th>
+                <th>Gewicht</th>
+                <th>Gesundheit</th>
                 <th>Wetter</th>
                 <th>Jagdart</th>
                 <th>Bemerkung</th>
@@ -118,6 +132,8 @@ form.addEventListener('submit', e => {
         wildart: document.getElementById('wildart').value,
         geschlecht: document.getElementById('geschlecht').value,
         anzahl: document.getElementById('anzahl').value,
+        gewicht: document.getElementById('gewicht').value,
+        gesundheit: document.getElementById('gesundheit').value,
         wetter: document.getElementById('wetter').value,
         jagdart: document.getElementById('jagdart').value,
         bemerkung: document.getElementById('bemerkung').value,
@@ -139,6 +155,8 @@ function renderTable() {
             <td>${eintrag.wildart}</td>
             <td>${eintrag.geschlecht}</td>
             <td>${eintrag.anzahl}</td>
+            <td>${eintrag.gewicht}</td>
+            <td>${eintrag.gesundheit}</td>
             <td>${eintrag.wetter}</td>
             <td>${eintrag.jagdart}</td>
             <td>${eintrag.bemerkung}</td>
@@ -167,7 +185,7 @@ async function exportPDF() {
     doc.setFontSize(10);
 
     eintraege.forEach((eintrag, index) => {
-        const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
+        const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Gewicht: ${eintrag.gewicht} kg, Zustand: ${eintrag.gesundheit}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
         const lines = doc.splitTextToSize(text, 180);
         doc.text(lines, 10, y);
         y += lines.length * 6;
