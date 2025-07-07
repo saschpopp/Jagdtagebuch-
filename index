@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jagdtagebuch</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1 { text-align: center; }
+        form, table { max-width: 900px; margin: auto; }
+        input, select, textarea, button {
+            display: block; width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box;
+        }
+        table { border-collapse: collapse; width: 100%; background-color: white; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        th { background-color: #eee; }
+        .entry-form { background-color: white; padding: 20px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Jagdtagebuch</h1>
+    <div class="entry-form">
+        <form id="jagdForm">
+            <label>Datum:</label>
+            <input type="date" id="datum" required>
+
+            <label>Uhrzeit:</label>
+            <input type="time" id="uhrzeit" required>
+
+            <label>Ort:</label>
+            <input type="text" id="ort" required>
+
+            <label>Wildart:</label>
+            <input type="text" id="wildart" required>
+
+            <label>Geschlecht:</label>
+            <select id="geschlecht" required>
+                <option value="">Bitte wählen</option>
+                <option value="männlich">männlich</option>
+                <option value="weiblich">weiblich</option>
+                <option value="unbekannt">unbekannt</option>
+            </select>
+
+            <label>Stückzahl:</label>
+            <input type="number" id="anzahl" required>
+
+            <label>Wetter:</label>
+            <input type="text" id="wetter">
+
+            <label>Bemerkung:</label>
+            <textarea id="bemerkung"></textarea>
+
+            <button type="submit">Eintrag speichern</button>
+        </form>
+    </div>
+
+    <h2 style="text-align:center">Einträge</h2>
+    <table id="eintragTabelle">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Uhrzeit</th>
+                <th>Ort</th>
+                <th>Wildart</th>
+                <th>Geschlecht</th>
+                <th>Stück</th>
+                <th>Wetter</th>
+                <th>Bemerkung</th>
+                <th>Aktion</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const form = document.getElementById('jagdForm');
+        const tabelle = document.getElementById('eintragTabelle').querySelector('tbody');
+
+        let eintraege = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+        renderTable();
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const eintrag = {
+                datum: document.getElementById('datum').value,
+                uhrzeit: document.getElementById('uhrzeit').value,
+                ort: document.getElementById('ort').value,
+                wildart: document.getElementById('wildart').value,
+                geschlecht: document.getElementById('geschlecht').value,
+                anzahl: document.getElementById('anzahl').value,
+                wetter: document.getElementById('wetter').value,
+                bemerkung: document.getElementById('bemerkung').value,
+            };
+            eintraege.push(eintrag);
+            localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
+            form.reset();
+            renderTable();
+        });
+
+        function renderTable() {
+            tabelle.innerHTML = '';
+            eintraege.forEach((eintrag, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${eintrag.datum}</td>
+                    <td>${eintrag.uhrzeit}</td>
+                    <td>${eintrag.ort}</td>
+                    <td>${eintrag.wildart}</td>
+                    <td>${eintrag.geschlecht}</td>
+                    <td>${eintrag.anzahl}</td>
+                    <td>${eintrag.wetter}</td>
+                    <td>${eintrag.bemerkung}</td>
+                    <td><button onclick="loeschen(${index})">Löschen</button></td>
+                `;
+                tabelle.appendChild(row);
+            });
+        }
+
+        function loeschen(index) {
+            if (confirm('Eintrag wirklich löschen?')) {
+                eintraege.splice(index, 1);
+                localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
+                renderTable();
+            }
+        }
+    </script>
+</body>
+</html>
