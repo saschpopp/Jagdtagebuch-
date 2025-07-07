@@ -8,7 +8,7 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
         h1 { text-align: center; }
-        form, table { max-width: 900px; margin: auto; }
+        form, table { max-width: 1000px; margin: auto; }
         input, select, textarea, button {
             display: block; width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box;
         }
@@ -16,9 +16,13 @@
         th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
         th { background-color: #eee; }
         .entry-form { background-color: white; padding: 20px; border-radius: 8px; }
+        .export-button { max-width: 1000px; margin: 20px auto; text-align: right; }
     </style>
 </head>
-<body>
+
+<body onload="checkPassword()">
+<div id="auth" style="display:none">
+
     <h1>Jagdtagebuch</h1>
     <div class="entry-form">
         <form id="jagdForm">
@@ -48,11 +52,25 @@
             <label>Wetter:</label>
             <input type="text" id="wetter">
 
+            <label>Jagdart:</label>
+            <select id="jagdart" required>
+                <option value="">Bitte wählen</option>
+                <option value="Ansitz">Ansitz</option>
+                <option value="Pirsch">Pirsch</option>
+                <option value="Drückjagd">Drückjagd</option>
+                <option value="Lockjagd">Lockjagd</option>
+                <option value="andere">andere</option>
+            </select>
+
             <label>Bemerkung:</label>
             <textarea id="bemerkung"></textarea>
 
             <button type="submit">Eintrag speichern</button>
         </form>
+    </div>
+
+    <div class="export-button">
+        <button onclick="exportPDF()">📄 Als PDF exportieren</button>
     </div>
 
     <h2 style="text-align:center">Einträge</h2>
@@ -66,6 +84,7 @@
                 <th>Geschlecht</th>
                 <th>Stück</th>
                 <th>Wetter</th>
+                <th>Jagdart</th>
                 <th>Bemerkung</th>
                 <th>Aktion</th>
             </tr>
@@ -73,6 +92,7 @@
         <tbody></tbody>
     </table>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         const form = document.getElementById('jagdForm');
         const tabelle = document.getElementById('eintragTabelle').querySelector('tbody');
@@ -90,6 +110,7 @@
                 geschlecht: document.getElementById('geschlecht').value,
                 anzahl: document.getElementById('anzahl').value,
                 wetter: document.getElementById('wetter').value,
+                jagdart: document.getElementById('jagdart').value,
                 bemerkung: document.getElementById('bemerkung').value,
             };
             eintraege.push(eintrag);
@@ -110,6 +131,7 @@
                     <td>${eintrag.geschlecht}</td>
                     <td>${eintrag.anzahl}</td>
                     <td>${eintrag.wetter}</td>
+                    <td>${eintrag.jagdart}</td>
                     <td>${eintrag.bemerkung}</td>
                     <td><button onclick="loeschen(${index})">Löschen</button></td>
                 `;
@@ -124,6 +146,45 @@
                 renderTable();
             }
         }
+
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let y = 10;
+
+            doc.setFontSize(16);
+            doc.text("Jagdtagebuch", 10, y);
+            y += 10;
+            doc.setFontSize(10);
+
+            eintraege.forEach((eintrag, index) => {
+                const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
+                const lines = doc.splitTextToSize(text, 180);
+                doc.text(lines, 10, y);
+                y += lines.length * 6;
+
+                if (y > 270) {
+                    doc.addPage();
+                    y = 10;
+                }
+            });
+
+            doc.save("Jagdtagebuch.pdf");
+        }
     </script>
+
+</div>
+<script>
+function checkPassword() {
+    var password = prompt("🔐 Bitte Passwort eingeben:");
+    if (password === "horrido1803") {
+        document.getElementById("auth").style.display = "block";
+    } else {
+        alert("Falsches Passwort – Zugriff verweigert.");
+        document.body.innerHTML = "<h2 style='text-align:center;'>❌ Kein Zugriff</h2>";
+    }
+}
+</script>
 </body>
+
 </html>
