@@ -6,105 +6,168 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jagdtagebuch</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; padding: 0; }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
         h1 { text-align: center; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input, textarea, select { width: 100%; padding: 8px; margin-top: 5px; }
-        button { margin-top: 15px; padding: 10px; width: 100%; font-size: 16px; }
-        .entry { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+        form, table { max-width: 1000px; margin: auto; }
+        input, select, textarea, button {
+            display: block; width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box;
+        }
+        table { border-collapse: collapse; width: 100%; background-color: white; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        th { background-color: #eee; }
+        .entry-form { background-color: white; padding: 20px; border-radius: 8px; }
+        .export-button { max-width: 1000px; margin: 20px auto; text-align: right; }
     </style>
 </head>
 <body>
     <h1>Jagdtagebuch</h1>
-    <form id="jagdForm">
-        <label>Datum</label>
-        <input type="date" id="datum" required>
+    <div class="entry-form">
+        <form id="jagdForm">
+            <label>Datum:</label>
+            <input type="date" id="datum" required>
 
-        <label>Ort / Revier</label>
-        <input type="text" id="ort">
+            <label>Uhrzeit:</label>
+            <input type="time" id="uhrzeit" required>
 
-        <label>Wetter</label>
-        <input type="text" id="wetter">
+            <label>Ort:</label>
+            <input type="text" id="ort" required>
 
-        <label>Wildart</label>
-        <input type="text" id="wildart">
+            <label>Wildart:</label>
+            <input type="text" id="wildart" required>
 
-        <label>Geschlecht</label>
-        <select id="geschlecht">
-            <option value="">– bitte wählen –</option>
-            <option value="männlich">männlich</option>
-            <option value="weiblich">weiblich</option>
-        </select>
+            <label>Geschlecht:</label>
+            <select id="geschlecht" required>
+                <option value="">Bitte wählen</option>
+                <option value="männlich">männlich</option>
+                <option value="weiblich">weiblich</option>
+                <option value="unbekannt">unbekannt</option>
+            </select>
 
-        <label>Alter (geschätzt)</label>
-        <input type="text" id="alter">
+            <label>Stückzahl:</label>
+            <input type="number" id="anzahl" required>
 
-        <label>Schussentfernung (m)</label>
-        <input type="number" id="entfernung">
+            <label>Wetter:</label>
+            <input type="text" id="wetter">
 
-        <label>Munition / Kaliber</label>
-        <input type="text" id="munition">
+            <label>Jagdart:</label>
+            <select id="jagdart" required>
+                <option value="">Bitte wählen</option>
+                <option value="Ansitz">Ansitz</option>
+                <option value="Pirsch">Pirsch</option>
+                <option value="Drückjagd">Drückjagd</option>
+                <option value="Lockjagd">Lockjagd</option>
+                <option value="andere">andere</option>
+            </select>
 
-        <label>Bemerkungen</label>
-        <textarea id="bemerkungen"></textarea>
+            <label>Bemerkung:</label>
+            <textarea id="bemerkung"></textarea>
 
-        <button type="submit">Eintrag speichern</button>
-    </form>
+            <button type="submit">Eintrag speichern</button>
+        </form>
+    </div>
 
-    <h2>Gespeicherte Einträge</h2>
-    <div id="eintraege"></div>
+    <div class="export-button">
+        <button onclick="exportPDF()">📄 Als PDF exportieren</button>
+    </div>
 
+    <h2 style="text-align:center">Einträge</h2>
+    <table id="eintragTabelle">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Uhrzeit</th>
+                <th>Ort</th>
+                <th>Wildart</th>
+                <th>Geschlecht</th>
+                <th>Stück</th>
+                <th>Wetter</th>
+                <th>Jagdart</th>
+                <th>Bemerkung</th>
+                <th>Aktion</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         const form = document.getElementById('jagdForm');
-        const eintraegeDiv = document.getElementById('eintraege');
+        const tabelle = document.getElementById('eintragTabelle').querySelector('tbody');
 
-        function ladeEintraege() {
-            const daten = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
-            eintraegeDiv.innerHTML = '';
-            daten.forEach((eintrag, index) => {
-                const div = document.createElement('div');
-                div.className = 'entry';
-                div.innerHTML = `
-                    <strong>${eintrag.datum}</strong> – ${eintrag.wildart} (${eintrag.geschlecht})<br>
-                    Ort: ${eintrag.ort}<br>
-                    Wetter: ${eintrag.wetter}<br>
-                    Alter: ${eintrag.alter}, Entfernung: ${eintrag.entfernung} m<br>
-                    Kaliber: ${eintrag.munition}<br>
-                    Bemerkungen: ${eintrag.bemerkungen || "-"}<br>
-                    <button onclick="loescheEintrag(${index})">Löschen</button>
+        let eintraege = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+        renderTable();
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const eintrag = {
+                datum: document.getElementById('datum').value,
+                uhrzeit: document.getElementById('uhrzeit').value,
+                ort: document.getElementById('ort').value,
+                wildart: document.getElementById('wildart').value,
+                geschlecht: document.getElementById('geschlecht').value,
+                anzahl: document.getElementById('anzahl').value,
+                wetter: document.getElementById('wetter').value,
+                jagdart: document.getElementById('jagdart').value,
+                bemerkung: document.getElementById('bemerkung').value,
+            };
+            eintraege.push(eintrag);
+            localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
+            form.reset();
+            renderTable();
+        });
+
+        function renderTable() {
+            tabelle.innerHTML = '';
+            eintraege.forEach((eintrag, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${eintrag.datum}</td>
+                    <td>${eintrag.uhrzeit}</td>
+                    <td>${eintrag.ort}</td>
+                    <td>${eintrag.wildart}</td>
+                    <td>${eintrag.geschlecht}</td>
+                    <td>${eintrag.anzahl}</td>
+                    <td>${eintrag.wetter}</td>
+                    <td>${eintrag.jagdart}</td>
+                    <td>${eintrag.bemerkung}</td>
+                    <td><button onclick="loeschen(${index})">Löschen</button></td>
                 `;
-                eintraegeDiv.appendChild(div);
+                tabelle.appendChild(row);
             });
         }
 
-        function loescheEintrag(index) {
-            const daten = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
-            daten.splice(index, 1);
-            localStorage.setItem('jagdtagebuch', JSON.stringify(daten));
-            ladeEintraege();
+        function loeschen(index) {
+            if (confirm('Eintrag wirklich löschen?')) {
+                eintraege.splice(index, 1);
+                localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
+                renderTable();
+            }
         }
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const neuerEintrag = {
-                datum: document.getElementById('datum').value,
-                ort: document.getElementById('ort').value,
-                wetter: document.getElementById('wetter').value,
-                wildart: document.getElementById('wildart').value,
-                geschlecht: document.getElementById('geschlecht').value,
-                alter: document.getElementById('alter').value,
-                entfernung: document.getElementById('entfernung').value,
-                munition: document.getElementById('munition').value,
-                bemerkungen: document.getElementById('bemerkungen').value
-            };
-            const daten = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
-            daten.push(neuerEintrag);
-            localStorage.setItem('jagdtagebuch', JSON.stringify(daten));
-            form.reset();
-            ladeEintraege();
-        });
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let y = 10;
 
-        ladeEintraege();
+            doc.setFontSize(16);
+            doc.text("Jagdtagebuch", 10, y);
+            y += 10;
+            doc.setFontSize(10);
+
+            eintraege.forEach((eintrag, index) => {
+                const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
+                const lines = doc.splitTextToSize(text, 180);
+                doc.text(lines, 10, y);
+                y += lines.length * 6;
+
+                if (y > 270) {
+                    doc.addPage();
+                    y = 10;
+                }
+            });
+
+            doc.save("Jagdtagebuch.pdf");
+        }
     </script>
 </body>
 </html>

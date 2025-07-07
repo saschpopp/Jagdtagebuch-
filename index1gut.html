@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jagdtagebuch</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; padding: 0; }
+        h1 { text-align: center; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 8px; margin-top: 5px; }
+        button { margin-top: 15px; padding: 10px; width: 100%; font-size: 16px; }
+        .entry { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Jagdtagebuch</h1>
+    <form id="jagdForm">
+        <label>Datum</label>
+        <input type="date" id="datum" required>
+
+        <label>Ort / Revier</label>
+        <input type="text" id="ort">
+
+        <label>Wetter</label>
+        <input type="text" id="wetter">
+
+        <label>Wildart</label>
+        <input type="text" id="wildart">
+
+        <label>Geschlecht</label>
+        <select id="geschlecht">
+            <option value="">– bitte wählen –</option>
+            <option value="männlich">männlich</option>
+            <option value="weiblich">weiblich</option>
+        </select>
+
+        <label>Alter (geschätzt)</label>
+        <input type="text" id="alter">
+
+        <label>Schussentfernung (m)</label>
+        <input type="number" id="entfernung">
+
+        <label>Munition / Kaliber</label>
+        <input type="text" id="munition">
+
+        <label>Bemerkungen</label>
+        <textarea id="bemerkungen"></textarea>
+
+        <button type="submit">Eintrag speichern</button>
+    </form>
+
+    <h2>Gespeicherte Einträge</h2>
+    <div id="eintraege"></div>
+
+    <script>
+        const form = document.getElementById('jagdForm');
+        const eintraegeDiv = document.getElementById('eintraege');
+
+        function ladeEintraege() {
+            const daten = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+            eintraegeDiv.innerHTML = '';
+            daten.forEach((eintrag, index) => {
+                const div = document.createElement('div');
+                div.className = 'entry';
+                div.innerHTML = `
+                    <strong>${eintrag.datum}</strong> – ${eintrag.wildart} (${eintrag.geschlecht})<br>
+                    Ort: ${eintrag.ort}<br>
+                    Wetter: ${eintrag.wetter}<br>
+                    Alter: ${eintrag.alter}, Entfernung: ${eintrag.entfernung} m<br>
+                    Kaliber: ${eintrag.munition}<br>
+                    Bemerkungen: ${eintrag.bemerkungen || "-"}<br>
+                    <button onclick="loescheEintrag(${index})">Löschen</button>
+                `;
+                eintraegeDiv.appendChild(div);
+            });
+        }
+
+        function loescheEintrag(index) {
+            const daten = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+            daten.splice(index, 1);
+            localStorage.setItem('jagdtagebuch', JSON.stringify(daten));
+            ladeEintraege();
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const neuerEintrag = {
+                datum: document.getElementById('datum').value,
+                ort: document.getElementById('ort').value,
+                wetter: document.getElementById('wetter').value,
+                wildart: document.getElementById('wildart').value,
+                geschlecht: document.getElementById('geschlecht').value,
+                alter: document.getElementById('alter').value,
+                entfernung: document.getElementById('entfernung').value,
+                munition: document.getElementById('munition').value,
+                bemerkungen: document.getElementById('bemerkungen').value
+            };
+            const daten = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+            daten.push(neuerEintrag);
+            localStorage.setItem('jagdtagebuch', JSON.stringify(daten));
+            form.reset();
+            ladeEintraege();
+        });
+
+        ladeEintraege();
+    </script>
+</body>
+</html>
