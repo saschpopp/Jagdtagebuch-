@@ -2,8 +2,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Jagdtagebuch</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
@@ -19,7 +19,8 @@
         .export-button { max-width: 1000px; margin: 20px auto; text-align: right; }
     </style>
 </head>
-<body>
+<body onload="checkPassword()">
+<div id="auth" style="display:none">
     <h1>Jagdtagebuch</h1>
     <div class="entry-form">
         <form id="jagdForm">
@@ -88,86 +89,97 @@
         </thead>
         <tbody></tbody>
     </table>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-        const form = document.getElementById('jagdForm');
-        const tabelle = document.getElementById('eintragTabelle').querySelector('tbody');
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function checkPassword() {
+    var password = prompt("🔐 Bitte Passwort eingeben:");
+    if (password === "horrido1803") {
+        document.getElementById("auth").style.display = "block";
+    } else {
+        alert("Falsches Passwort – Zugriff verweigert.");
+        document.body.innerHTML = "<h2 style='text-align:center;'>❌ Kein Zugriff</h2>";
+    }
+}
 
-        let eintraege = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+const form = document.getElementById('jagdForm');
+const tabelle = document.getElementById('eintragTabelle').querySelector('tbody');
+
+let eintraege = JSON.parse(localStorage.getItem('jagdtagebuch') || '[]');
+renderTable();
+
+form.addEventListener('submit', e => {
+    e.preventDefault();
+    const eintrag = {
+        datum: document.getElementById('datum').value,
+        uhrzeit: document.getElementById('uhrzeit').value,
+        ort: document.getElementById('ort').value,
+        wildart: document.getElementById('wildart').value,
+        geschlecht: document.getElementById('geschlecht').value,
+        anzahl: document.getElementById('anzahl').value,
+        wetter: document.getElementById('wetter').value,
+        jagdart: document.getElementById('jagdart').value,
+        bemerkung: document.getElementById('bemerkung').value,
+    };
+    eintraege.push(eintrag);
+    localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
+    form.reset();
+    renderTable();
+});
+
+function renderTable() {
+    tabelle.innerHTML = '';
+    eintraege.forEach((eintrag, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${eintrag.datum}</td>
+            <td>${eintrag.uhrzeit}</td>
+            <td>${eintrag.ort}</td>
+            <td>${eintrag.wildart}</td>
+            <td>${eintrag.geschlecht}</td>
+            <td>${eintrag.anzahl}</td>
+            <td>${eintrag.wetter}</td>
+            <td>${eintrag.jagdart}</td>
+            <td>${eintrag.bemerkung}</td>
+            <td><button onclick="loeschen(${index})">Löschen</button></td>
+        `;
+        tabelle.appendChild(row);
+    });
+}
+
+function loeschen(index) {
+    if (confirm('Eintrag wirklich löschen?')) {
+        eintraege.splice(index, 1);
+        localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
         renderTable();
+    }
+}
 
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            const eintrag = {
-                datum: document.getElementById('datum').value,
-                uhrzeit: document.getElementById('uhrzeit').value,
-                ort: document.getElementById('ort').value,
-                wildart: document.getElementById('wildart').value,
-                geschlecht: document.getElementById('geschlecht').value,
-                anzahl: document.getElementById('anzahl').value,
-                wetter: document.getElementById('wetter').value,
-                jagdart: document.getElementById('jagdart').value,
-                bemerkung: document.getElementById('bemerkung').value,
-            };
-            eintraege.push(eintrag);
-            localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
-            form.reset();
-            renderTable();
-        });
+async function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 10;
 
-        function renderTable() {
-            tabelle.innerHTML = '';
-            eintraege.forEach((eintrag, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${eintrag.datum}</td>
-                    <td>${eintrag.uhrzeit}</td>
-                    <td>${eintrag.ort}</td>
-                    <td>${eintrag.wildart}</td>
-                    <td>${eintrag.geschlecht}</td>
-                    <td>${eintrag.anzahl}</td>
-                    <td>${eintrag.wetter}</td>
-                    <td>${eintrag.jagdart}</td>
-                    <td>${eintrag.bemerkung}</td>
-                    <td><button onclick="loeschen(${index})">Löschen</button></td>
-                `;
-                tabelle.appendChild(row);
-            });
+    doc.setFontSize(16);
+    doc.text("Jagdtagebuch", 10, y);
+    y += 10;
+    doc.setFontSize(10);
+
+    eintraege.forEach((eintrag, index) => {
+        const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, 10, y);
+        y += lines.length * 6;
+
+        if (y > 270) {
+            doc.addPage();
+            y = 10;
         }
+    });
 
-        function loeschen(index) {
-            if (confirm('Eintrag wirklich löschen?')) {
-                eintraege.splice(index, 1);
-                localStorage.setItem('jagdtagebuch', JSON.stringify(eintraege));
-                renderTable();
-            }
-        }
-
-        async function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            let y = 10;
-
-            doc.setFontSize(16);
-            doc.text("Jagdtagebuch", 10, y);
-            y += 10;
-            doc.setFontSize(10);
-
-            eintraege.forEach((eintrag, index) => {
-                const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
-                const lines = doc.splitTextToSize(text, 180);
-                doc.text(lines, 10, y);
-                y += lines.length * 6;
-
-                if (y > 270) {
-                    doc.addPage();
-                    y = 10;
-                }
-            });
-
-            doc.save("Jagdtagebuch.pdf");
-        }
-    </script>
+    doc.save("Jagdtagebuch.pdf");
+}
+</script>
 </body>
 </html>
