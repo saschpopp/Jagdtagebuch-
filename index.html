@@ -35,7 +35,10 @@
             <label>Wildart:</label>
             <input type="text" id="wildart" required>
 
-            <label>Geschlecht:</label>
+            <label>Alter (geschätzt, Jahre):</label>
+<input type="number" id="alter" placeholder="z. B. 3">
+
+<label>Geschlecht:</label>
             <select id="geschlecht" required>
                 <option value="">Bitte wählen</option>
                 <option value="männlich">männlich</option>
@@ -91,6 +94,7 @@
                 <th>Uhrzeit</th>
                 <th>Ort</th>
                 <th>Wildart</th>
+                <th>Alter</th>
                 <th>Geschlecht</th>
                 <th>Stück</th>
                 <th>Gewicht</th>
@@ -136,6 +140,7 @@ form.addEventListener('submit', e => {
         gesundheit: document.getElementById('gesundheit').value,
         wetter: document.getElementById('wetter').value,
         jagdart: document.getElementById('jagdart').value,
+        alter: document.getElementById('alter').value,
         bemerkung: document.getElementById('bemerkung').value,
     };
     eintraege.push(eintrag);
@@ -153,6 +158,7 @@ function renderTable() {
             <td>${eintrag.uhrzeit}</td>
             <td>${eintrag.ort}</td>
             <td>${eintrag.wildart}</td>
+            <td>${eintrag.alter}</td>
             <td>${eintrag.geschlecht}</td>
             <td>${eintrag.anzahl}</td>
             <td>${eintrag.gewicht}</td>
@@ -185,7 +191,7 @@ async function exportPDF() {
     doc.setFontSize(10);
 
     eintraege.forEach((eintrag, index) => {
-        const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Gewicht: ${eintrag.gewicht} kg, Zustand: ${eintrag.gesundheit}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Bemerkung: ${eintrag.bemerkung}`;
+        const text = `${index + 1}. ${eintrag.datum} ${eintrag.uhrzeit}, ${eintrag.ort}, ${eintrag.wildart}, ${eintrag.geschlecht}, Stück: ${eintrag.anzahl}, Gewicht: ${eintrag.gewicht} kg, Zustand: ${eintrag.gesundheit}, Wetter: ${eintrag.wetter}, Jagdart: ${eintrag.jagdart}, Alter: ${eintrag.alter}, Bemerkung: ${eintrag.bemerkung}`;
         const lines = doc.splitTextToSize(text, 180);
         doc.text(lines, 10, y);
         y += lines.length * 6;
